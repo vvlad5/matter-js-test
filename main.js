@@ -75,7 +75,7 @@ function initComponent() {
 
   world = engine.world;
   world.gravity = {
-    scale: 0.003,
+    scale: 0.002,
     x: 0, y: 1,
   };
 
@@ -97,8 +97,8 @@ function initComponent() {
 
     return Bodies.circle(x, y, elem.size, {
       restitution: 0.35,
+      frictionAir: 0.045,
       friction: 0.5,
-      frictionAir: 0.06,
       density: 1,
       render: {
         fillStyle: '#fff',
