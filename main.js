@@ -9,8 +9,8 @@ const Query = Matter.Query;
 const Events = Matter.Events;
 const Runner = Matter.Runner;
 
-const borderWidth = 100;
-const borderHalfWidth = 50;
+const borderSize = 100;
+const borderHalfSize = 50;
 const socialModels = [{
   size: 100,
   text: 'Facebook',
@@ -40,6 +40,7 @@ container.appendChild(canvas);
 let sceneWidth = null;
 let sceneHalfWidth = null;
 let sceneHeight = null;
+let sceneHalfHeight = null;
 
 let world = null;
 let engine = null;
@@ -49,6 +50,7 @@ let mouse = null;
 let mouseConstraint = null;
 
 let resetTimeoutId = null;
+let isMouseDown = null;
 
 updateSceneSize();
 initComponent();
@@ -87,28 +89,60 @@ function initComponent() {
     x: 0, y: 1,
   };
 
-  const ground = Bodies.rectangle(sceneHalfWidth, sceneHeight + borderHalfWidth, sceneWidth, borderWidth, {
-    isStatic: true,
-    density: 1,
-  });
-  const rightWall = Bodies.rectangle(sceneWidth + borderHalfWidth, 0, borderWidth, sceneHeight * 3, {
-    isStatic: true,
-    density: 1,
-  });
-  const leftWall = Bodies.rectangle(-borderHalfWidth, 0, borderWidth, sceneHeight * 3, {
-    isStatic: true,
-    density: 1,
-  });
+  const ground = (function() {
+    const xPos = sceneHalfWidth;
+    const yPos = sceneHeight + borderHalfSize;
+    const width = sceneWidth;
+    const height = borderSize;
 
-  World.add(world, [ground, leftWall, rightWall]);
+    return Bodies.rectangle(xPos, yPos, width, height, {
+      isStatic: true,
+      density: 1,
+    });
+  })();
+  const leftWall = (function() {
+    const xPos = -borderHalfSize;
+    const yPos = -sceneHalfHeight - borderHalfSize;
+    const width = borderSize;
+    const height = sceneHeight * 3;
+
+    return Bodies.rectangle(xPos, yPos, width, height, {
+      isStatic: true,
+      density: 1,
+    });
+  })();
+  const rightWall = (function() {
+    const xPos = sceneWidth + borderHalfSize;
+    const yPos = -sceneHalfHeight - borderHalfSize;
+    const width = borderSize;
+    const height = sceneHeight * 3;
+
+    return Bodies.rectangle(xPos, yPos, width, height, {
+      isStatic: true,
+      density: 1,
+    });
+  })();
+  const ceiling = (function() {
+    const xPos = sceneHalfWidth;
+    const yPos = -sceneHeight * 2 - borderHalfSize;
+    const width = sceneWidth;
+    const height = borderSize;
+
+    return Bodies.rectangle(xPos, yPos, width, height, {
+      isStatic: true,
+      density: 1,
+    });
+  })();
+
+  World.add(world, [ground, leftWall, rightWall, ceiling]);
 
   socialModels.forEach((elem, i) => {
     const xPos = getRandomNumber(sceneHalfWidth - 100, sceneHalfWidth + 100);
-    const yPos = getRandomNumber(-500, -700);
+    const yPos = getRandomNumber(-sceneHalfHeight, -sceneHeight);
     const body = Bodies.circle(xPos, yPos, elem.size, {
       restitution: 0.35,
       frictionAir: 0.045,
-      friction: 0.5,
+      friction: 0.55,
       density: 1,
       url: elem.url,
       render: {
@@ -141,7 +175,7 @@ function initComponent() {
   World.add(world, mouseConstraint);
   render.mouse = mouse;
 
-  Events.on(mouseConstraint, 'mousedown', prepareToRedirect);
+  Events.on(mouseConstraint, 'mousedown', onMouseDown);
 
   Render.lookAt(render, {
     min: { x: 0, y: 0 },
@@ -167,22 +201,26 @@ function resetComponent() {
   engine = null;
   runner = null;
   mouse = null;
+  mouseConstraint = null;
 }
 
-function prepareToRedirect({ mouse: { button } }) {
-  if (button !== 0) return null;
+function onMouseDown({ mouse: { button } }) {
+  if (isMouseDown || button !== 0) return isMouseDown = false;
+  isMouseDown = true;
 
-  Events.on(mouseConstraint, 'mouseup', redirectOnUrl);
+  Events.on(mouseConstraint, 'mouseup', onMouseUp);
   setTimeout(() => {
-    Events.off(mouseConstraint, 'mouseup', redirectOnUrl);
+    Events.off(mouseConstraint, 'mouseup', onMouseUp);
   }, 150);
 }
 
-function redirectOnUrl({ source: { mouse } }) {
+function onMouseUp({ mouse }) {
+  isMouseDown = false;
+
   const elemFromPoint = Query.point(world.bodies, mouse.position)[0];
   if (!elemFromPoint) return null;
 
-  Events.off(mouseConstraint, 'mouseup', redirectOnUrl);
+  Events.off(mouseConstraint, 'mouseup', onMouseUp);
   window.open(elemFromPoint.url, '_blank');
 }
 
@@ -190,6 +228,7 @@ function updateSceneSize() {
   sceneWidth = container.clientWidth;
   sceneHalfWidth = sceneWidth / 2;
   sceneHeight = container.clientHeight;
+  sceneHalfHeight = sceneHeight / 2;
 }
 
 function getRandomNumber(min = -Infinity, max = Infinity) {
