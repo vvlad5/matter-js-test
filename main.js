@@ -5,7 +5,7 @@ const Bodies = Matter.Bodies;
 const World = Matter.World;
 const Runner = Matter.Runner;
 
-const elementModels = [{
+const socialModels = [{
   size: 100,
   text: 'Facebook',
 }, {
@@ -63,7 +63,7 @@ function initComponent() {
     },
   });
 
-  const elements = elementModels.map(elem => {
+  const elements = socialModels.map(elem => {
     const x = getRandomNumber(sceneHalfWidth - 20, sceneHalfWidth + 20);
     const y = getRandomNumber(-500, -700);
 
@@ -83,7 +83,7 @@ function initComponent() {
     });
   });
 
-  const ground = Bodies.rectangle(sceneWidth / 2, sceneHeight + 5, sceneWidth, 10, { isStatic: true });
+  const ground = Bodies.rectangle(sceneHalfWidth, sceneHeight + 5, sceneWidth, 10, { isStatic: true });
   const leftWall = Bodies.rectangle(-5, 0, 10, sceneHeight * 3, { isStatic: true });
   const rightWall = Bodies.rectangle(sceneWidth + 5, 0, 10, sceneHeight * 3, { isStatic: true });
 
@@ -93,13 +93,13 @@ function initComponent() {
 }
 
 function resetComponent() {
-  World.clear(engine.world);
-  Engine.clear(engine);
-  Runner.stop(runner);
+  engine && World.clear(engine.world);
+  engine && Engine.clear(engine);
+  runner && Runner.stop(runner);
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      Render.stop(render);
+      render && Render.stop(render);
       render = null;
     });
   });
