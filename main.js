@@ -141,7 +141,7 @@ function initComponent() {
   World.add(world, mouseConstraint);
   render.mouse = mouse;
 
-  Events.on(mouseConstraint, 'mousedown', prepareToOpenSocialUrl);
+  Events.on(mouseConstraint, 'mousedown', prepareToRedirect);
 
   Render.lookAt(render, {
     min: { x: 0, y: 0 },
@@ -168,16 +168,16 @@ function resetComponent() {
   mouse = null;
 }
 
-function prepareToOpenSocialUrl({ mouse: { button } }) {
+function prepareToRedirect({ mouse: { button } }) {
   if (button !== 0) return null;
 
+  Events.on(mouseConstraint, 'mouseup', redirectOnUrl);
   setTimeout(() => {
-    Events.off(mouseConstraint, 'mouseup', openSocialUrl);
-  }, 200);
-  Events.on(mouseConstraint, 'mouseup', openSocialUrl);
+    Events.off(mouseConstraint, 'mouseup', redirectOnUrl);
+  }, 150);
 }
 
-function openSocialUrl({ source: { mouse } }) {
+function redirectOnUrl({ source: { mouse } }) {
   const elemFromPoint = Query.point(world.bodies, mouse.position)[0];
   if (!elemFromPoint) return null;
 
