@@ -1,10 +1,13 @@
 const Engine = Matter.Engine;
 const Render = CustomRenderer;
-const Body = Matter.Body;
 const Bodies = Matter.Bodies;
 const World = Matter.World;
+const MouseConstraint = Matter.MouseConstraint;
+const Mouse = Matter.Mouse;
 const Runner = Matter.Runner;
 
+const borderWidth = 100;
+const borderHalfWidth = 50;
 const socialModels = [{
   size: 100,
   text: 'Facebook',
@@ -30,9 +33,12 @@ let sceneWidth = null;
 let sceneHalfWidth = null;
 let sceneHeight = null;
 
+let world = null;
 let engine = null;
 let render = null;
 let runner = null;
+let mouse = null;
+let mouseConstraint = null;
 
 let resetTimeoutId = null;
 
@@ -50,6 +56,7 @@ window.addEventListener('resize', () => {
 });
 
 function initComponent() {
+  runner = Runner.create();
   engine = Engine.create();
   render = Render.create({
     element: container,
@@ -63,13 +70,35 @@ function initComponent() {
     },
   });
 
+  Render.run(render);
+  Runner.run(runner, engine);
+
+  world = engine.world;
+  world.gravity = {
+    scale: 0.003,
+    x: 0, y: 1,
+  };
+
+  const ground = Bodies.rectangle(sceneHalfWidth, sceneHeight + borderHalfWidth, sceneWidth, borderWidth, {
+    isStatic: true,
+    density: 1,
+  });
+  const rightWall = Bodies.rectangle(sceneWidth + borderHalfWidth, 0, borderWidth, sceneHeight * 3, {
+    isStatic: true,
+    density: 1,
+  });
+  const leftWall = Bodies.rectangle(-borderHalfWidth, 0, borderWidth, sceneHeight * 3, {
+    isStatic: true,
+    density: 1,
+  });
   const elements = socialModels.map(elem => {
     const x = getRandomNumber(sceneHalfWidth - 20, sceneHalfWidth + 20);
     const y = getRandomNumber(-500, -700);
 
     return Bodies.circle(x, y, elem.size, {
       restitution: 0.35,
-      friction: 1,
+      friction: 0.5,
+      frictionAir: 0.06,
       density: 1,
       render: {
         fillStyle: '#fff',
@@ -83,19 +112,33 @@ function initComponent() {
     });
   });
 
-  const ground = Bodies.rectangle(sceneHalfWidth, sceneHeight + 5, sceneWidth, 10, { isStatic: true });
-  const leftWall = Bodies.rectangle(-5, 0, 10, sceneHeight * 3, { isStatic: true });
-  const rightWall = Bodies.rectangle(sceneWidth + 5, 0, 10, sceneHeight * 3, { isStatic: true });
+  World.add(world, [...elements, ground, leftWall, rightWall]);
 
-  World.add(engine.world, [...elements, ground, leftWall, rightWall]);
-  runner = Engine.run(engine);
-  Render.run(render);
+  mouse = Mouse.create(render.canvas);
+  mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+      stiffness: 0.1,
+      render: {
+        visible: false,
+      },
+    },
+  });
+
+  World.add(world, mouseConstraint);
+  render.mouse = mouse;
+
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: sceneWidth, y: sceneHeight },
+  });
 }
 
 function resetComponent() {
-  engine && World.clear(engine.world);
+  world && World.clear(world);
   engine && Engine.clear(engine);
   runner && Runner.stop(runner);
+  mouse && Mouse.clearSourceEvents(mouse);
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -104,8 +147,10 @@ function resetComponent() {
     });
   });
 
+  world = null;
   engine = null;
   runner = null;
+  mouse = null;
 }
 
 function updateSceneSize() {
