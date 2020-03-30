@@ -1,83 +1,117 @@
 const Engine = Matter.Engine;
-const World = Matter.World;
+const Render = CustomRenderer;
+const Body = Matter.Body;
 const Bodies = Matter.Bodies;
-const Composite = Matter.Composite;
+const World = Matter.World;
+const Runner = Matter.Runner;
 
-const elementsModel = [
-  {
-    size: 100,
-  }, {
-    size: 120,
-  }, {
-    size: 70,
-  }, {
-    size: 100
-  }, {
-    size: 100
-  }
-];
+const elementModels = [{
+  size: 100,
+  text: 'Facebook',
+}, {
+  size: 120,
+  text: 'Instagram',
+}, {
+  size: 70,
+  text: 'OK',
+}, {
+  size: 100,
+  text: 'VK',
+}, {
+  size: 100,
+  text: 'YouTube',
+}];
 
-const engine = Engine.create();
+const container = document.querySelector('.js-scene-container');
+const canvas = document.createElement('canvas');
+container.appendChild(canvas);
 
-const elements = elementsModel.map(elem => {
-  const x = getRandomNumber(240, 280);
-  const y = getRandomNumber(-500, -700);
+let sceneWidth = null;
+let sceneHalfWidth = null;
+let sceneHeight = null;
 
-  return Bodies.circle(x, y, elem.size, {
-    restitution: 0.35,
-    friction: 1,
-    density: 1,
-  });
+let engine = null;
+let render = null;
+let runner = null;
+
+let resetTimeoutId = null;
+
+updateSceneSize();
+initComponent();
+window.addEventListener('resize', () => {
+  if (!resetTimeoutId) resetComponent();
+
+  clearTimeout(resetTimeoutId);
+  resetTimeoutId = setTimeout(() => {
+    updateSceneSize();
+    initComponent();
+    resetTimeoutId = null;
+  }, 1000);
 });
-const ground = Bodies.rectangle(250, 905, 500, 10, {isStatic: true});
-const leftWall = Bodies.rectangle(-5, 0, 10, 2700, {isStatic: true});
-const rightWall = Bodies.rectangle(505, 0, 10, 2700, {isStatic: true});
 
-World.add(engine.world, [...elements, ground, leftWall, rightWall]);
-Engine.run(engine);
-customRender();
-
-function customRender() {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-
-  canvas.style.cssText = `
-    margin-left: 50%;
-    transform: translateX(-50%);
-  `;
-  canvas.width = 500;
-  canvas.height = 900;
-
-  document.body.appendChild(canvas);
-  const bodies = Composite.allBodies(engine.world);
-
-  requestAnimationFrame(function render() {
-    context.save();
-    context.fillStyle = '#6001d9';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.restore();
-
-    context.fillStyle = '#fff';
-    context.beginPath();
-
-    for (let i = 0; i < bodies.length; i += 1) {
-      let vertices = bodies[i].vertices;
-
-      context.moveTo(vertices[0].x, vertices[0].y);
-
-      for (let j = 1; j < vertices.length; j += 1) {
-        context.lineTo(vertices[j].x, vertices[j].y);
-      }
-
-      context.lineTo(vertices[0].x, vertices[0].y);
-    }
-
-    context.lineWidth = 1;
-    context.stroke();
-    context.fill();
-
-    window.requestAnimationFrame(render);
+function initComponent() {
+  engine = Engine.create();
+  render = Render.create({
+    element: container,
+    canvas, engine,
+    options: {
+      width: sceneWidth,
+      height: sceneHeight,
+      background: '#6001d9',
+      showAngleIndicator: false,
+      wireframes: false,
+    },
   });
+
+  const elements = elementModels.map(elem => {
+    const x = getRandomNumber(sceneHalfWidth - 20, sceneHalfWidth + 20);
+    const y = getRandomNumber(-500, -700);
+
+    return Bodies.circle(x, y, elem.size, {
+      restitution: 0.35,
+      friction: 1,
+      density: 1,
+      render: {
+        fillStyle: '#fff',
+        text: {
+          content: elem.text,
+          fontFamily: 'Inter',
+          fontSize: 28,
+          color: '#6001d9',
+        },
+      },
+    });
+  });
+
+  const ground = Bodies.rectangle(sceneWidth / 2, sceneHeight + 5, sceneWidth, 10, { isStatic: true });
+  const leftWall = Bodies.rectangle(-5, 0, 10, sceneHeight * 3, { isStatic: true });
+  const rightWall = Bodies.rectangle(sceneWidth + 5, 0, 10, sceneHeight * 3, { isStatic: true });
+
+  World.add(engine.world, [...elements, ground, leftWall, rightWall]);
+  runner = Engine.run(engine);
+  Render.run(render);
+}
+
+function resetComponent() {
+  World.clear(engine.world);
+  Engine.clear(engine);
+  Runner.stop(runner);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      Render.stop(render);
+      render = null;
+    });
+  });
+
+  engine = null;
+  runner = null;
+}
+
+function updateSceneSize() {
+  sceneWidth = container.clientWidth;
+  sceneHalfWidth = sceneWidth / 2;
+  sceneHeight = container.clientHeight;
 }
 
 function getRandomNumber(min = -Infinity, max = Infinity) {

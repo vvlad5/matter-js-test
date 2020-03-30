@@ -1,15 +1,21 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Matter JS test</title>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Matter JS test</title>
+
+  <link href="./main.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Inter:500&amp;display=swap&amp;subset=cyrillic"
+        rel="stylesheet">
 </head>
-<body>
+<body class="scene">
+<div class="scene__container js-scene-container"></div>
 
 <script src="matter.min.js"></script>
+<script src="custom-renderer.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
