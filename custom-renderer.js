@@ -1,5 +1,4 @@
 const CustomRenderer = Matter.Render;
-
 CustomRenderer.bodies = (render, bodies, context) => {
   const c = context;
   const engine = render.engine;

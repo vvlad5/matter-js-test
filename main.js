@@ -103,7 +103,7 @@ function initComponent() {
   World.add(world, [ground, leftWall, rightWall]);
 
   socialModels.forEach((elem, i) => {
-    const xPos = getRandomNumber(sceneHalfWidth - 20, sceneHalfWidth + 20);
+    const xPos = getRandomNumber(sceneHalfWidth - 100, sceneHalfWidth + 100);
     const yPos = getRandomNumber(-500, -700);
     const body = Bodies.circle(xPos, yPos, elem.size, {
       restitution: 0.35,
@@ -124,7 +124,7 @@ function initComponent() {
 
     setTimeout(() => {
       World.addBody(world, body);
-    }, 200 * (i + 1));
+    }, 350 * i);
   });
 
   mouse = Mouse.create(render.canvas);
@@ -150,6 +150,7 @@ function initComponent() {
 }
 
 function resetComponent() {
+  Events.off(mouseConstraint);
   world && World.clear(world);
   engine && Engine.clear(engine);
   runner && Runner.stop(runner);
@@ -181,6 +182,7 @@ function redirectOnUrl({ source: { mouse } }) {
   const elemFromPoint = Query.point(world.bodies, mouse.position)[0];
   if (!elemFromPoint) return null;
 
+  Events.off(mouseConstraint, 'mouseup', redirectOnUrl);
   window.open(elemFromPoint.url, '_blank');
 }
 
