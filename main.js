@@ -1,7 +1,6 @@
 const Engine = Matter.Engine;
 const Render = CustomRenderer;
 const Bodies = Matter.Bodies;
-const Composite = Matter.Composite;
 const World = Matter.World;
 const MouseConstraint = Matter.MouseConstraint;
 const Mouse = Matter.Mouse;
@@ -9,38 +8,11 @@ const Query = Matter.Query;
 const Events = Matter.Events;
 const Runner = Matter.Runner;
 
-const borderSize = 100;
-const borderHalfSize = 50;
-const socialModels = [{
-  size: 100,
-  text: 'Facebook',
-  url: 'https://facebook.com',
-}, {
-  size: 120,
-  text: 'Instagram',
-  url: 'https://instagram.com',
-}, {
-  size: 70,
-  text: 'OK',
-  url: 'https://ok.ru',
-}, {
-  size: 100,
-  text: 'VK',
-  url: 'https://vk.com',
-}, {
-  size: 100,
-  text: 'YouTube',
-  url: 'https://youtube.com',
-}];
-
-const container = document.querySelector('.js-scene-container');
-const canvas = document.createElement('canvas');
-container.appendChild(canvas);
-
 let sceneWidth = null;
 let sceneHalfWidth = null;
 let sceneHeight = null;
 let sceneHalfHeight = null;
+let viewport = null;
 
 let world = null;
 let engine = null;
@@ -52,20 +24,26 @@ let mouseConstraint = null;
 let resetTimeoutId = null;
 let isMouseDown = null;
 
+const container = document.querySelector('.js-scene-container');
+const canvas = document.createElement('canvas');
+container.appendChild(canvas);
+
 updateSceneSize();
-initComponent();
+updateViewportMode();
+initComponents();
 window.addEventListener('resize', () => {
-  if (!resetTimeoutId) resetComponent();
+  if (!resetTimeoutId) resetComponents();
 
   clearTimeout(resetTimeoutId);
   resetTimeoutId = setTimeout(() => {
     updateSceneSize();
-    initComponent();
+    updateViewportMode();
+    initComponents();
     resetTimeoutId = null;
   }, 1000);
 });
 
-function initComponent() {
+function initComponents() {
   runner = Runner.create();
   engine = Engine.create();
   render = Render.create({
@@ -74,7 +52,7 @@ function initComponent() {
     options: {
       width: sceneWidth,
       height: sceneHeight,
-      background: '#6001d9',
+      background: sceneOptions.background,
       showAngleIndicator: false,
       wireframes: false,
     },
@@ -136,24 +114,25 @@ function initComponent() {
 
   World.add(world, [ground, leftWall, rightWall, ceiling]);
 
-  socialModels.forEach((elem, i) => {
+  bodyModels.forEach((elem, i) => {
     const xPos = getRandomNumber(sceneHalfWidth - 100, sceneHalfWidth + 100);
     const yPos = getRandomNumber(-sceneHalfHeight, -sceneHeight);
-    const body = Bodies.circle(xPos, yPos, elem.size, {
+    const radius = bodyOptions.responsive[viewport].radius * elem.sizeFactor;
+    const body = Bodies.circle(xPos, yPos, radius, {
       restitution: 0.35,
       frictionAir: 0.045,
       friction: 0.55,
       density: 1,
-      url: elem.url,
       render: {
-        fillStyle: '#fff',
+        fillStyle: bodyOptions.background,
         text: {
           content: elem.text,
-          fontFamily: 'Inter',
-          fontSize: 28,
-          color: '#6001d9',
+          fontFamily: bodyOptions.fontFamily,
+          fontSize: bodyOptions.responsive[viewport].fontSize,
+          color: bodyOptions.color,
         },
       },
+      url: elem.url,
     });
 
     setTimeout(() => {
@@ -183,7 +162,7 @@ function initComponent() {
   });
 }
 
-function resetComponent() {
+function resetComponents() {
   Events.off(mouseConstraint);
   world && World.clear(world);
   engine && Engine.clear(engine);
@@ -216,11 +195,11 @@ function onMouseDown({ mouse: { button } }) {
 
 function onMouseUp({ mouse }) {
   isMouseDown = false;
+  Events.off(mouseConstraint, 'mouseup', onMouseUp);
 
   const elemFromPoint = Query.point(world.bodies, mouse.position)[0];
   if (!elemFromPoint) return null;
 
-  Events.off(mouseConstraint, 'mouseup', onMouseUp);
   window.open(elemFromPoint.url, '_blank');
 }
 
@@ -229,6 +208,24 @@ function updateSceneSize() {
   sceneHalfWidth = sceneWidth / 2;
   sceneHeight = container.clientHeight;
   sceneHalfHeight = sceneHeight / 2;
+}
+
+function updateViewportMode() {
+  const viewportWidth = document.documentElement.clientWidth;
+
+  switch (true) {
+    case viewportWidth > 1279:
+      viewport = 'desktop';
+      break;
+    case viewportWidth > 1023:
+      viewport = 'laptop';
+      break;
+    case viewportWidth > 767:
+      viewport = 'tablet';
+      break;
+    default:
+      viewport = 'mobile';
+  }
 }
 
 function getRandomNumber(min = -Infinity, max = Infinity) {
